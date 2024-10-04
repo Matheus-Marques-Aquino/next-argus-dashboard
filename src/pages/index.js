@@ -821,7 +821,7 @@ export default function Home() {
         </div>
         <div className="w-[18%] p-1 bg-[#AFF4C6] text-center rounded-[10px]">
           <div className="mx-auto w-fit">Meta Faturamento</div>
-          <div className={`mx-auto w-fit my-1`}>R$ {formatDigits(data.metaFaturamento) ?? '00,00'} / R$ {formatDigits(metaFaturamentoMes) ?? '00,00'}</div> 
+          <div className={`mx-auto w-fit my-1`}>R$ {formatDigits(data.metaFaturamento) ?? '00,00'}</div> 
         </div>
         <div className="w-[18%] p-1 bg-[#AFF4C6] text-center rounded-[10px]">
           <div className="mx-auto w-fit">Projeção Vendas</div>
