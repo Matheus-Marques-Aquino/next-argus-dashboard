@@ -292,7 +292,7 @@ export default function NewUserModal({ user_id, campanha_id, close }) {
     }, [user_id, campanha_id, month, year]);
 
     useEffect(()=>{
-        console.log('1 - USUARIO:', usuario);
+        //console.log('1 - USUARIO:', usuario);
     }, [usuario]);
 
     //console.log(usuario, vendas, ligacoes, metricaLigacoes, metricaVendas);

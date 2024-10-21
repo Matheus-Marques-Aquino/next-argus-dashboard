@@ -21,6 +21,7 @@ import CalendarHandler from "@/components/utilities/CalendarHandler";
 
 import MetasModal from "@/components/dash-argus/MetasModal";
 //import { Edit } from "lucide-react";
+import LoadingScreen from "@/components/dash-argus/LoadingScreen";
 
 function sanitazeName(name, removeDash = false) {
   if (typeof name !== 'string') return '';
@@ -211,7 +212,7 @@ export default function Home() {
 
     var results = {};
 
-    //console.log(payload)
+    console.log('CampanhasData:', payload);
 
     await axios.post("https://22dzrq2jme.execute-api.sa-east-1.amazonaws.com/default/dashboard-argus-rds", { ...payload, endpoint: 'leads' }, { timeout: 0, headers })
       .then((response) => {
@@ -363,12 +364,21 @@ export default function Home() {
   }, [ready]);
 
   useEffect(()=>{
-    console.log('camps:', getCampanhasData(filtroCampanhas));
-    if (metaMensal.starting) initMetas();
-    if (filtroCampanhas.length > 0){ 
-      setMetaMensal({...metaMensal, starting: false});
-      updateData();
-    }
+    console.log('FiltroCampanhas:', getCampanhasData(filtroCampanhas));
+
+    const updateFiltroCampanha = async () => {
+      if (metaMensal.starting) initMetas();
+      if (filtroCampanhas.length > 0){
+        try {
+          await updateData();        
+          setMetaMensal({...metaMensal, starting: false});
+        }catch(e){
+          console.log('Erro ao atualizar o filtro de Campanhas:', e);
+        }
+      }
+    };
+
+    updateFiltroCampanha();
     //if (!ready) setReady(true);
   }, [filtroCampanhas]);
 
@@ -514,7 +524,7 @@ export default function Home() {
         var _tab = tabulacoes[camp];
         var _vend = vendas[camp];
 
-        console.log("b", camp, _cat, _tab, _vend);
+        console.log(camp, _cat, _tab, _vend);
 
         if (!_metricas[camp]) _metricas[camp] = {};
 
@@ -572,7 +582,7 @@ export default function Home() {
       console.log('Erro ao processar as metricas:', e);
     }
 
-    console.log('1', _metricas)
+    console.log('Metricas:', _metricas)
 
     return _metricas
   }
@@ -585,25 +595,31 @@ export default function Home() {
   const init = async () => {
     await getCampanhas();    
     //console.log(calendario.getWorkedDays());
-    const interval = setInterval(() => { if (filtroCampanhas && filtroCampanhas[0]) updateData(); }, 1000 * 60 * 3);
+    //const interval = setInterval(() => { if (filtroCampanhas && filtroCampanhas[0]) updateData(); }, 1000 * 60 * 3);
   };
 
   useEffect(() => {
     if (!ready) init();
-
   }, []);
 
 
   const updateData = async () => {    
     var start = new Date();
     console.log("Atualizando Dados:", start);
-    getMetas();
-    getLeadsData();
-    getVendasData();
-    getUsuariosData();
-    getLigacoesData();
-    getLotes();
-    //buildFilters();
+    try {
+      setLoading(true);    
+      await getLeadsData();
+      await getMetas();
+      await getVendasData();
+      await getUsuariosData();
+      //getLigacoesData();
+      await getLotes();
+      //buildFilters();
+    } catch(e) {
+      console.log('Erro ao atualizar os dados:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const checkboxHandler = (e) => {
@@ -687,7 +703,7 @@ export default function Home() {
         blackList = 0
       } = _metricas[camp];
 
-      console.log(_metricas[camp])
+      //console.log(_metricas[camp])
 
       _data.qtdLeads += qtdLeads ? qtdLeads : 0;
       _data.foraDeTarget += foraDeTarget ? foraDeTarget : 0;
@@ -730,7 +746,7 @@ export default function Home() {
     if (!trabalhado) trabalhado = 1;
     if (!trabalhar) trabalhar = 1;
 
-    console.log("AAAAAAAAAAA", _meta, _data)
+    //console.log("AAAAAAAAAAA", _meta, _data)
 
     if (_data && _data.ticketMedio > 0 && _meta && _data.faturamento && _meta > _data.faturamento) {
       //let faturamentoDia = _data.faturamento / trabalhado * trabalhar;
@@ -753,11 +769,10 @@ export default function Home() {
       //_data.metaVendas = Math.round(_data.metaVendas * 100) / 100;
       //_data.metaFaturamento = (_meta - _data.faturamento) / trabalhar;      
       //_data.metaFaturamento = Math.round(_data.metaFaturamento * 100) / 100;
-
     } 
 
     setData(_data);
-    console.log("Data:", _data);
+    //console.log("Data:", _data);
   
     return _data;
   };
@@ -780,10 +795,14 @@ export default function Home() {
 
   var metaFaturamentoMes = metas[_campanha.sanitaze] ?? '00,00';
 
-  //console.log("https://22dzrq2jme.execute-api.sa-east-1.amazonaws.com/default/dashboard-argus-rds");
+  //console.log("Categorias:", categorias);
+  //console.log("Filtro Campanhas:", filtroCampanhas)
 
   return (
   <div className="w-full h-full max-w-[1200px] mx-auto">
+    
+    <LoadingScreen isLoading={loading} />
+    
     {!ready && (
       <div className="fixed top-0 left-0 w-full h-full z-[100]" onClick={(e)=>{e.stopPropagation()}}>
         <div className="p-4 w-[420px] fixed top-0 left-0 bottom-0 right-0 w-fit h-fit transform rounded-lg bg-white text-left shadow-xl transition-all m-auto z-[120] text-gray-600 text-[15px]">
@@ -1120,9 +1139,9 @@ export default function Home() {
         </div>
           <div className="rounded-sm flex mt-6 ml-6 w-fit">
             <div className="rounded-sm flex flex-wrap h-fit">
-                <DistinctCard title="Categorias" campanhas={filtroCampanhas} distincts={categorias} />
-                <DistinctCard title="Tabulações" campanhas={filtroCampanhas} distincts={tabulacoes} />
-                <DistinctCard title="Fora de Target" campanhas={filtroCampanhas} distincts={offTarget} />
+                <DistinctCard title="Categorias" campanhas={filtroCampanhas} distincts={categorias} campanha={filtroCampanhas[0]} />
+                <DistinctCard title="Tabulações" campanhas={filtroCampanhas} distincts={tabulacoes} campanha={filtroCampanhas[0]} />
+                <DistinctCard title="Fora de Target" campanhas={filtroCampanhas} distincts={offTarget} campanha={filtroCampanhas[0]} />
                 <UsersCard title="Usuários" campanhas={filtroCampanhas} distincts={usuarios} vendas={vendas} select={(id)=>{ console.log(id); setSelectedUser(id); }}/>
             </div>
           </div>

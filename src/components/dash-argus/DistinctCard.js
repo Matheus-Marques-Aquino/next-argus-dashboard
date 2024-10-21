@@ -25,11 +25,14 @@ function rgbToHex(r, g, b, a = 0.7) {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(alpha)}`;
 }
 
-export default function DistinctCard({ campanhas = [], title = "", distincts = {} }) {
+export default function DistinctCard({ campanhas = [], title = "", distincts = {}, campanha = null }) {
     var rows = [];
     var total = 0;
 
+    //console.log('DISTINCTS', distincts, 'campanha:', campanha);
+
     if (!distincts || Object.keys(distincts).length === 0) return (<></>);
+    if (!campanha) return (<></>);
     
     var data = {
         labels: [],
@@ -51,6 +54,8 @@ export default function DistinctCard({ campanhas = [], title = "", distincts = {
     };
 
     for (let camp in distincts) {
+        if (camp != campanha) continue;
+
         var _camp = distincts[camp];
         if (!_camp || Object.keys(_camp).length === 0) continue;  // Corrigido Object.keys check
 
@@ -61,7 +66,7 @@ export default function DistinctCard({ campanhas = [], title = "", distincts = {
 
             let row = rows.find((row) => row.name === key);
             if (row) row.value += _camp[key];
-            else rows.push({ name: key, value: _camp[key], color: randomColor });
+            else rows.push({ name: key, value: _camp[key], color: randomColor.rgba });
 
             if (!data.datasets[0].data.includes(_camp[key]) && !data.labels.includes(key)) {
                 var color = (row && row.color) ? row.color : randomColor.rgba;
